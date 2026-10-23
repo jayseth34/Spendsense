@@ -1,0 +1,137 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Payments</h1>
+      <p class="muted">Money coming in and going out.</p>
+    </div>
+    <app-month-picker></app-month-picker>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi">
+      <span class="kpi-label">Received · {{ vm.month | monthLabel: 'short' }}</span>
+      <span class="kpi-value sm pos-text">{{ vm.received | inr }}</span>
+      <span class="kpi-sub">Net {{ vm.net | inr }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Paid out · {{ vm.month | monthLabel: 'short' }}</span>
+      <span class="kpi-value sm">{{ vm.paid | inr }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">To receive</span>
+      <span class="kpi-value sm">{{ vm.toReceive | inr }}</span>
+      <span class="kpi-sub">{{ vm.toReceiveCount }} pending</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">To pay</span>
+      <span class="kpi-value sm" [class.over-text]="vm.toPay > 0">{{ vm.toPay | inr }}</span>
+      <span class="kpi-sub">{{ vm.toPayCount }} pending</span>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <div>
+      <form #formCard class="card form" (ngSubmit)="save()" novalidate>
+        <div class="card-head"><h2>{{ draft.id ? 'Edit payment' : 'New payment' }}</h2></div>
+
+        <div class="dir-toggle" role="radiogroup" aria-label="Direction">
+          <button type="button" role="radio" [attr.aria-checked]="draft.direction === 'in'" [class.active-in]="draft.direction === 'in'" (click)="draft.direction = 'in'">↓ Incoming</button>
+          <button type="button" role="radio" [attr.aria-checked]="draft.direction === 'out'" [class.active-out]="draft.direction === 'out'" (click)="draft.direction = 'out'">↑ Outgoing</button>
+        </div>
+
+        <div class="row-2">
+          <label><span class="label">Amount (₹)</span>
+            <input type="number" inputmode="decimal" min="0" step="0.01" name="amt" [(ngModel)]="draft.amount" placeholder="0" /></label>
+          <label><span class="label">{{ draft.direction === 'in' ? 'From' : 'To' }}</span>
+            <input type="text" name="party" [(ngModel)]="draft.party" maxlength="60" list="parties" placeholder="Name or company" /></label>
+          <datalist id="parties"><option *ngFor="let p of vm.parties" [value]="p"></option></datalist>
+        </div>
+
+        <fieldset>
+          <legend class="label">Status</legend>
+          <div class="seg">
+            <button type="button" [class.active]="draft.status === 'done'" (click)="draft.status = 'done'">{{ doneLabel(draft.direction) }}</button>
+            <button type="button" [class.active]="draft.status === 'pending'" (click)="draft.status = 'pending'">Pending</button>
+          </div>
+        </fieldset>
+
+        <div class="row-2">
+          <label><span class="label">{{ draft.status === 'pending' ? 'Expected on' : 'Date' }}</span>
+            <input type="date" name="date" [(ngModel)]="draft.date" [max]="draft.status === 'done' ? maxDate : ''" /></label>
+          <label><span class="label">Note <em>(optional)</em></span>
+            <input type="text" name="note" [(ngModel)]="draft.note" maxlength="120" placeholder="e.g. Invoice #12" /></label>
+        </div>
+
+        <fieldset>
+          <legend class="label">Method</legend>
+          <div class="seg">
+            <button *ngFor="let m of methods" type="button" [class.active]="m === draft.method" (click)="draft.method = m">{{ m }}</button>
+          </div>
+        </fieldset>
+
+        <p class="error" *ngIf="error" role="alert">{{ error }}</p>
+        <div class="actions">
+          <button class="btn danger ghost" type="button" *ngIf="editing" (click)="remove(editing)">Delete</button>
+          <span class="spacer"></span>
+          <button class="btn ghost" type="button" *ngIf="draft.id" (click)="cancel()">Cancel</button>
+          <button class="btn primary" type="submit">{{ draft.id ? 'Save changes' : 'Add payment' }}</button>
+        </div>
+      </form>
+
+      <section class="card" *ngIf="vm.people.length">
+        <div class="card-head"><h2>Pending by person</h2></div>
+        <ul class="cat-rows">
+          <li *ngFor="let p of vm.people">
+            <div class="cat-row static">
+              <span class="cat-name">{{ p.party }}</span>
+              <span class="cat-share">{{ p.net >= 0 ? 'owes you' : 'you owe' }}</span>
+              <span class="cat-total" [class.pos-text]="p.net > 0" [class.over-text]="p.net < 0">{{ (p.net < 0 ? -p.net : p.net) | inr }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="seg view-seg">
+        <button type="button" [class.active]="vm.view === 'all'" (click)="view$.next('all')">All</button>
+        <button type="button" [class.active]="vm.view === 'in'" (click)="view$.next('in')">Incoming</button>
+        <button type="button" [class.active]="vm.view === 'out'" (click)="view$.next('out')">Outgoing</button>
+      </div>
+
+      <ng-container *ngIf="vm.pending.length">
+        <div class="card-head spaced"><h2>Pending</h2><span class="muted small">{{ vm.pending.length }}</span></div>
+        <ul class="tx-list">
+          <ng-container *ngFor="let p of vm.pending; trackBy: track">
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: p }"></ng-container>
+          </ng-container>
+        </ul>
+      </ng-container>
+
+      <div class="card-head spaced"><h2>{{ vm.month | monthLabel }}</h2></div>
+      <p class="empty" *ngIf="!vm.done.length">No completed payments this month.</p>
+      <ul class="tx-list">
+        <ng-container *ngFor="let p of vm.done; trackBy: track">
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: p }"></ng-container>
+        </ng-container>
+      </ul>
+    </section>
+  </div>
+
+  <ng-template #row let-p>
+    <li class="tx">
+      <span class="tx-icon" [class.in]="p.direction === 'in'" [class.out]="p.direction === 'out'">{{ p.direction === 'in' ? '↓' : '↑' }}</span>
+      <button class="tx-main as-link" type="button" (click)="edit(p)">
+        <span class="tx-title">{{ p.party }}<ng-container *ngIf="p.note"> · {{ p.note }}</ng-container></span>
+        <span class="tx-meta">
+          {{ p.status === 'pending' ? 'Due ' : '' }}{{ p.date | dayLabel }}<ng-container *ngIf="p.method"> · {{ p.method }}</ng-container>
+        </span>
+      </button>
+      <span class="tx-amount" [class.pos]="p.direction === 'in'">{{ p.direction === 'in' ? '+' : '−' }}{{ p.amount | inr: true }}</span>
+      <button *ngIf="p.status === 'pending'" class="btn secondary sm" type="button" (click)="settle(p)">
+        {{ p.direction === 'in' ? 'Received' : 'Paid' }}
+      </button>
+      <button class="icon-btn subtle" type="button" (click)="remove(p)" [attr.aria-label]="'Delete payment ' + p.party">✕</button>
+    </li>
+  </ng-template>
+</ng-container>

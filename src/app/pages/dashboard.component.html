@@ -44,16 +44,19 @@
       </ng-template>
     </div>
 
-    <a class="kpi kpi-link" routerLink="/income">
-      <span class="kpi-label">Income · Saved</span>
-      <ng-container *ngIf="vm.incomeTotal; else noIncome">
-        <span class="kpi-value sm" [class.over-text]="vm.saved < 0">{{ vm.saved | inr }}</span>
-        <span class="kpi-sub">of {{ vm.incomeTotal | inr }} income</span>
+    <a class="kpi kpi-link" routerLink="/payments">
+      <span class="kpi-label">Money in · Net</span>
+      <ng-container *ngIf="vm.moneyIn || vm.moneyOut; else noPayments">
+        <span class="kpi-value sm" [class.over-text]="vm.net < 0">{{ vm.net | inr }}</span>
+        <span class="kpi-sub">{{ vm.moneyIn | inr }} in<ng-container *ngIf="vm.moneyOut"> · {{ vm.moneyOut | inr }} paid out</ng-container></span>
       </ng-container>
-      <ng-template #noIncome>
+      <ng-template #noPayments>
         <span class="kpi-value sm">—</span>
-        <span class="kpi-sub link">Add income</span>
+        <span class="kpi-sub link">Add a payment</span>
       </ng-template>
+      <span class="kpi-sub" *ngIf="vm.toReceive || vm.toPay">
+        Pending: <span class="pos-text" *ngIf="vm.toReceive">+{{ vm.toReceive | inr }}</span><ng-container *ngIf="vm.toReceive && vm.toPay"> / </ng-container><span class="over-text" *ngIf="vm.toPay">−{{ vm.toPay | inr }}</span>
+      </span>
     </a>
   </section>
 

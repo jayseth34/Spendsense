@@ -4,7 +4,8 @@ import { CategoriesComponent } from './pages/categories.component';
 import { CategoryDetailComponent } from './pages/category-detail.component';
 import { DashboardComponent } from './pages/dashboard.component';
 import { ExpenseFormComponent } from './pages/expense-form.component';
-import { IncomeComponent } from './pages/income.component';
+import { PaymentsComponent } from './pages/payments.component';
+import { ProfitsComponent } from './pages/profits.component';
 import { ReportsComponent } from './pages/reports.component';
 import { TransactionsComponent } from './pages/transactions.component';
 
@@ -16,7 +17,9 @@ const routes: Routes = [
   { path: 'categories', component: CategoriesComponent, title: 'Categories · SpendSense' },
   { path: 'categories/:id', component: CategoryDetailComponent, title: 'Category · SpendSense' },
   { path: 'transactions', component: TransactionsComponent, title: 'Transactions · SpendSense' },
-  { path: 'income', component: IncomeComponent, title: 'Income · SpendSense' },
+  { path: 'payments', component: PaymentsComponent, title: 'Payments · SpendSense' },
+  { path: 'profits', component: ProfitsComponent, title: 'Profits · SpendSense' },
+  { path: 'income', redirectTo: 'payments' },
   { path: 'reports', component: ReportsComponent, title: 'Reports · SpendSense' },
   { path: '**', redirectTo: 'dashboard' },
 ];

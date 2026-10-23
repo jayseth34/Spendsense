@@ -22,7 +22,22 @@
               [style.--c]="c.color" (click)="categoryId = c.id!">
         <span class="chip-icon">{{ c.icon }}</span>{{ c.name }}
       </button>
-      <a class="cat-chip add" routerLink="/categories" [queryParams]="{ new: 1 }">＋ New</a>
+      <button class="cat-chip add" type="button" (click)="startNewCategory()" *ngIf="!newCat">＋ New category</button>
+    </div>
+    <div class="new-cat" *ngIf="newCat as nc">
+      <div class="new-cat-row">
+        <input type="text" name="ncname" [(ngModel)]="nc.name" maxlength="40" placeholder="Category name" aria-label="New category name"
+               (keydown.enter)="$event.preventDefault(); createCategory()" #ncInput />
+        <input type="number" name="ncbudget" [(ngModel)]="nc.budget" min="0" step="100" placeholder="Budget ₹ (optional)" aria-label="Monthly budget" />
+      </div>
+      <div class="icon-grid compact">
+        <button *ngFor="let i of icons" type="button" [class.active]="i === nc.icon" (click)="nc.icon = i" [attr.aria-label]="'Icon ' + i">{{ i }}</button>
+      </div>
+      <div class="actions">
+        <span class="spacer"></span>
+        <button class="btn ghost sm" type="button" (click)="newCat = null">Cancel</button>
+        <button class="btn primary sm" type="button" (click)="createCategory()">Add category</button>
+      </div>
     </div>
   </fieldset>
 

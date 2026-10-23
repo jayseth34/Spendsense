@@ -28,6 +28,30 @@ export interface Income {
   createdAt: string;
 }
 
+/** Money moving in or out with another party (client, friend, vendor). */
+export interface Payment {
+  id?: number;
+  direction: 'in' | 'out';
+  amount: number;
+  party: string;         // who paid you / who you paid
+  date: string;          // YYYY-MM-DD — when it was (or is expected to be) settled
+  status: 'pending' | 'done';
+  method: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A profit (positive) or loss (negative) entry; the app keeps a running total. */
+export interface Profit {
+  id?: number;
+  amount: number;
+  date: string;
+  source: string;        // e.g. business or deal name
+  note: string;
+  createdAt: string;
+}
+
 export interface Setting {
   key: string;
   value: unknown;
@@ -51,6 +75,8 @@ export interface BackupFile {
   exportedAt: string;
   categories: Category[];
   expenses: Expense[];
-  income: Income[];
+  income?: Income[];      // schema v1 backups only
+  payments?: Payment[];
+  profits?: Profit[];
   settings: Setting[];
 }

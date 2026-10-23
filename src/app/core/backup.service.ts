@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { db, SCHEMA_VERSION } from './db';
-import { BackupFile, Category, Expense } from './models';
+import { BackupFile, Category, Expense, Payment } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class BackupService {
@@ -11,7 +11,8 @@ export class BackupService {
       exportedAt: new Date().toISOString(),
       categories: await db.categories.toArray(),
       expenses: await db.expenses.toArray(),
-      income: await db.income.toArray(),
+      payments: await db.payments.toArray(),
+      profits: await db.profits.toArray(),
       settings: await db.settings.toArray(),
     };
     download(`spendsense-backup-${stamp()}.json`, JSON.stringify(data, null, 2), 'application/json');
@@ -19,7 +20,7 @@ export class BackupService {
   }
 
   /** Replaces all local data with the contents of a backup file. */
-  async importJson(file: File): Promise<{ expenses: number; categories: number; income: number }> {
+  async importJson(file: File): Promise<{ expenses: number; categories: number; payments: number; profits: number }> {
     const parsed = JSON.parse(await file.text()) as BackupFile;
     if (parsed?.app !== 'SpendSense' || !Array.isArray(parsed.expenses) || !Array.isArray(parsed.categories)) {
       throw new Error('This file is not a SpendSense backup.');
@@ -27,14 +28,24 @@ export class BackupService {
     if (parsed.schemaVersion > SCHEMA_VERSION) {
       throw new Error('This backup was made by a newer version of SpendSense. Reload the app and try again.');
     }
-    await db.transaction('rw', [db.categories, db.expenses, db.income, db.settings], async () => {
-      await Promise.all([db.categories.clear(), db.expenses.clear(), db.income.clear(), db.settings.clear()]);
+    // v1 backups stored received money as `income`; convert it to incoming payments.
+    const payments: Payment[] = [
+      ...(parsed.payments ?? []),
+      ...(parsed.income ?? []).map(i => ({
+        direction: 'in' as const, amount: i.amount, party: i.source, date: i.date, status: 'done' as const,
+        method: '', note: i.note, createdAt: i.createdAt, updatedAt: i.createdAt,
+      })),
+    ];
+    const profits = parsed.profits ?? [];
+    await db.transaction('rw', [db.categories, db.expenses, db.income, db.payments, db.profits, db.settings], async () => {
+      await Promise.all([db.categories.clear(), db.expenses.clear(), db.income.clear(), db.payments.clear(), db.profits.clear(), db.settings.clear()]);
       await db.categories.bulkAdd(parsed.categories);
       await db.expenses.bulkAdd(parsed.expenses);
-      await db.income.bulkAdd(parsed.income ?? []);
+      await db.payments.bulkAdd(payments);
+      await db.profits.bulkAdd(profits);
       await db.settings.bulkAdd(parsed.settings ?? []);
     });
-    return { expenses: parsed.expenses.length, categories: parsed.categories.length, income: (parsed.income ?? []).length };
+    return { expenses: parsed.expenses.length, categories: parsed.categories.length, payments: payments.length, profits: profits.length };
   }
 
   exportCsv(expenses: Expense[], categories: Category[], filename = `spendsense-expenses-${stamp()}.csv`): void {

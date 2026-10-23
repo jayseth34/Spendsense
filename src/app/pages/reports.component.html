@@ -18,9 +18,9 @@
   <section class="kpis three">
     <div class="kpi"><span class="kpi-label">Spent in {{ vm.year }}</span><span class="kpi-value sm">{{ vm.total | inr }}</span></div>
     <div class="kpi"><span class="kpi-label">Average month</span><span class="kpi-value sm">{{ vm.avgMonth | inr }}</span></div>
-    <div class="kpi"><span class="kpi-label">Income · Saved</span>
-      <span class="kpi-value sm" [class.over-text]="vm.incomeTotal && vm.incomeTotal - vm.total < 0">{{ vm.incomeTotal ? (vm.incomeTotal - vm.total | inr) : '—' }}</span>
-      <span class="kpi-sub" *ngIf="vm.incomeTotal">of {{ vm.incomeTotal | inr }}</span></div>
+    <div class="kpi"><span class="kpi-label">Received · Net</span>
+      <span class="kpi-value sm" [class.over-text]="vm.incomeTotal && vm.incomeTotal - vm.total - vm.paidOutTotal < 0">{{ vm.incomeTotal ? (vm.incomeTotal - vm.total - vm.paidOutTotal | inr) : '—' }}</span>
+      <span class="kpi-sub" *ngIf="vm.incomeTotal">{{ vm.incomeTotal | inr }} received<ng-container *ngIf="vm.paidOutTotal"> · {{ vm.paidOutTotal | inr }} paid out</ng-container></span></div>
   </section>
 
   <section class="card">
@@ -33,13 +33,14 @@
       <div class="card-head"><h2>Monthly summary</h2></div>
       <p class="empty" *ngIf="!vm.rows.length">No data for {{ vm.year }}.</p>
       <table class="table" *ngIf="vm.rows.length">
-        <thead><tr><th>Month</th><th class="num">Spent</th><th class="num">Income</th><th class="num">Saved</th></tr></thead>
+        <thead><tr><th>Month</th><th class="num">Spent</th><th class="num">Paid out</th><th class="num">Received</th><th class="num">Net</th></tr></thead>
         <tbody>
           <tr *ngFor="let r of vm.rows">
             <td>{{ r.month | monthLabel: 'short' }}</td>
             <td class="num">{{ r.spent | inr }}</td>
+            <td class="num">{{ r.out ? (r.out | inr) : '—' }}</td>
             <td class="num">{{ r.income ? (r.income | inr) : '—' }}</td>
-            <td class="num" [class.over-text]="r.income && r.saved < 0">{{ r.income ? (r.saved | inr) : '—' }}</td>
+            <td class="num" [class.over-text]="r.net < 0" [class.pos-text]="r.net > 0">{{ r.net | inr }}</td>
           </tr>
         </tbody>
       </table>

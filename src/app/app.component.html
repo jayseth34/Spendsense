@@ -18,14 +18,23 @@
   </main>
 
   <nav class="bottom-nav no-print">
-    <a *ngFor="let n of nav.slice(0, 2)" [routerLink]="n.path" routerLinkActive="active">
-      <span aria-hidden="true">{{ n.icon }}</span>{{ n.label }}
+    <a *ngFor="let p of mobileMain.slice(0, 2)" [routerLink]="p" routerLinkActive="active" (click)="moreOpen = false">
+      <span aria-hidden="true">{{ item(p).icon }}</span>{{ item(p).label }}
     </a>
-    <a routerLink="/expense/new" class="fab" aria-label="Add expense">＋</a>
-    <a *ngFor="let n of [nav[2], nav[4]]" [routerLink]="n.path" routerLinkActive="active">
-      <span aria-hidden="true">{{ n.icon }}</span>{{ n.label === 'Transactions' ? 'History' : n.label }}
+    <a routerLink="/expense/new" class="fab" aria-label="Add expense" (click)="moreOpen = false">＋</a>
+    <a [routerLink]="mobileMain[2]" routerLinkActive="active" (click)="moreOpen = false">
+      <span aria-hidden="true">{{ item(mobileMain[2]).icon }}</span>{{ item(mobileMain[2]).label }}
     </a>
+    <button type="button" [class.active]="moreOpen" (click)="moreOpen = !moreOpen" [attr.aria-expanded]="moreOpen">
+      <span aria-hidden="true">⋯</span>More
+    </button>
   </nav>
+  <div class="more-backdrop no-print" *ngIf="moreOpen" (click)="moreOpen = false"></div>
+  <div class="more-sheet no-print" *ngIf="moreOpen">
+    <a *ngFor="let n of moreItems" [routerLink]="n.path" routerLinkActive="active" (click)="moreOpen = false">
+      <span class="nav-icon" aria-hidden="true">{{ n.icon }}</span>{{ n.label }}
+    </a>
+  </div>
 
   <div class="toasts" aria-live="polite">
     <div class="toast" *ngFor="let t of toast.toasts$ | async">

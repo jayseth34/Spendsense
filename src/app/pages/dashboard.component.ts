@@ -19,9 +19,10 @@ export class DashboardComponent {
         this.data.expenses$({ start: r.start, end: r.end }),
         this.data.expenses$({ start: p.start, end: p.end }),
         this.data.expenses$({ start: w.start, end: w.end }),
-        this.data.income$(r.start, r.end),
+        this.data.payments$({ start: r.start, end: r.end, status: 'done' }),
+        this.data.payments$({ status: 'pending' }),
       ]).pipe(
-        map(([expenses, prevExpenses, weekExpenses, income]) => {
+        map(([expenses, prevExpenses, weekExpenses, payments, pending]) => {
           const total = sum(expenses);
           const prevTotal = sum(prevExpenses);
           const totals = categoryTotals(expenses, categories);
@@ -29,7 +30,8 @@ export class DashboardComponent {
           const used = totals.filter(t => t.total > 0);
           const daily = dailySeries(expenses, month);
           const isCurrent = month === currentMonth();
-          const incomeTotal = sum(income);
+          const moneyIn = sum(payments.filter(p => p.direction === 'in'));
+          const moneyOut = sum(payments.filter(p => p.direction === 'out'));
           return {
             month, isCurrent, categories, expenses, total, prevTotal,
             change: pctChange(total, prevTotal),
@@ -38,8 +40,10 @@ export class DashboardComponent {
             weekTotal: sum(weekExpenses),
             budget,
             budgetUsed: budget ? total / budget : 0,
-            incomeTotal,
-            saved: incomeTotal - total,
+            moneyIn, moneyOut,
+            net: moneyIn - moneyOut - total,
+            toReceive: sum(pending.filter(p => p.direction === 'in')),
+            toPay: sum(pending.filter(p => p.direction === 'out')),
             totals,
             used,
             avgPerDay: total / (isCurrent ? Number(today().slice(8, 10)) : r.days),

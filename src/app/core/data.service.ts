@@ -2,7 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { liveQuery } from 'dexie';
 import { Observable } from 'rxjs';
 import { db } from './db';
-import { Category, Expense, Income } from './models';
+import { Category, Expense, Payment, Profit } from './models';
 
 export interface ExpenseFilter {
   start?: string;
@@ -10,6 +10,13 @@ export interface ExpenseFilter {
   categoryId?: number | null;
   paymentMethod?: string | null;
   search?: string;
+}
+
+export interface PaymentFilter {
+  start?: string;
+  end?: string;
+  direction?: 'in' | 'out' | null;
+  status?: 'pending' | 'done' | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -108,23 +115,60 @@ export class DataService {
     return db.expenses.put(e);
   }
 
-  // ---------- Income ----------
+  // ---------- Payments (incoming / outgoing) ----------
 
-  income$(start?: string, end?: string): Observable<Income[]> {
+  payments$(f: PaymentFilter = {}): Observable<Payment[]> {
     return this.live(async () => {
-      const rows = start || end
-        ? await db.income.where('date').between(start ?? '0000-00-00', end ?? '9999-99-99', true, true).toArray()
-        : await db.income.toArray();
-      return rows.sort((a, b) => b.date.localeCompare(a.date));
+      let rows = f.start || f.end
+        ? await db.payments.where('date').between(f.start ?? '0000-00-00', f.end ?? '9999-99-99', true, true).toArray()
+        : await db.payments.toArray();
+      if (f.direction) rows = rows.filter(p => p.direction === f.direction);
+      if (f.status) rows = rows.filter(p => p.status === f.status);
+      return rows.sort((a, b) => b.date.localeCompare(a.date) || (b.id ?? 0) - (a.id ?? 0));
     });
   }
 
-  addIncome(i: Omit<Income, 'id' | 'createdAt'>): Promise<number> {
-    return db.income.add({ ...i, amount: round2(i.amount), createdAt: new Date().toISOString() });
+  addPayment(p: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'>): Promise<number> {
+    const now = new Date().toISOString();
+    return db.payments.add({ ...p, amount: round2(p.amount), party: p.party.trim(), createdAt: now, updatedAt: now });
   }
 
-  deleteIncome(id: number): Promise<void> {
-    return db.income.delete(id);
+  updatePayment(id: number, p: Partial<Payment>): Promise<number> {
+    const changes = { ...p, updatedAt: new Date().toISOString() };
+    if (changes.amount != null) changes.amount = round2(changes.amount);
+    return db.payments.update(id, changes);
+  }
+
+  deletePayment(id: number): Promise<void> {
+    return db.payments.delete(id);
+  }
+
+  restorePayment(p: Payment): Promise<number> {
+    return db.payments.put(p);
+  }
+
+  // ---------- Profits ----------
+
+  profits$(): Observable<Profit[]> {
+    return this.live(async () =>
+      (await db.profits.toArray()).sort((a, b) => b.date.localeCompare(a.date) || (b.id ?? 0) - (a.id ?? 0)));
+  }
+
+  addProfit(p: Omit<Profit, 'id' | 'createdAt'>): Promise<number> {
+    return db.profits.add({ ...p, amount: round2(p.amount), source: p.source.trim(), createdAt: new Date().toISOString() });
+  }
+
+  updateProfit(id: number, p: Partial<Profit>): Promise<number> {
+    if (p.amount != null) p = { ...p, amount: round2(p.amount) };
+    return db.profits.update(id, p);
+  }
+
+  deleteProfit(id: number): Promise<void> {
+    return db.profits.delete(id);
+  }
+
+  restoreProfit(p: Profit): Promise<number> {
+    return db.profits.put(p);
   }
 
   // ---------- Settings ----------

@@ -22,24 +22,29 @@ export class ReportsComponent implements OnInit {
       const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
       return combineLatest([
         this.data.expenses$({ start: `${year}-01-01`, end: `${year}-12-31` }),
-        this.data.income$(`${year}-01-01`, `${year}-12-31`),
+        this.data.payments$({ start: `${year}-01-01`, end: `${year}-12-31`, status: 'done' }),
       ]).pipe(
-        map(([expenses, income]) => {
+        map(([expenses, payments]) => {
+          const inRows = payments.filter(p => p.direction === 'in');
+          const outRows = payments.filter(p => p.direction === 'out');
           const spent = monthlySeries(expenses, months);
-          const earned = monthlySeries(income, months);
+          const earned = monthlySeries(inRows, months);
+          const paidOut = monthlySeries(outRows, months);
           const total = sum(expenses);
           const activeMonths = spent.filter(v => v > 0).length;
           return {
             year, categories, expenses, lastBackupAt, total,
-            incomeTotal: sum(income),
+            incomeTotal: sum(inRows),
+            paidOutTotal: sum(outRows),
             avgMonth: activeMonths ? total / activeMonths : 0,
-            rows: months.map((m, i) => ({ month: m, spent: spent[i], income: earned[i], saved: earned[i] - spent[i] })).filter(r => r.spent || r.income),
+            rows: months.map((m, i) => ({ month: m, spent: spent[i], out: paidOut[i], income: earned[i], net: earned[i] - spent[i] - paidOut[i] })).filter(r => r.spent || r.income || r.out),
             byCategory: categoryTotals(expenses, categories).filter(t => t.total > 0),
             chart: {
               labels: months.map(m => monthLabel(m, 'short').split(' ')[0]),
               datasets: [
                 { label: 'Spent', data: spent, backgroundColor: '#2563eb', borderRadius: 4, maxBarThickness: 22 },
-                { label: 'Income', data: earned, backgroundColor: '#16a34a88', borderRadius: 4, maxBarThickness: 22 },
+                { label: 'Paid out', data: paidOut, backgroundColor: '#ea580c99', borderRadius: 4, maxBarThickness: 22 },
+                { label: 'Received', data: earned, backgroundColor: '#16a34a88', borderRadius: 4, maxBarThickness: 22 },
               ],
             },
           };
@@ -77,7 +82,7 @@ export class ReportsComponent implements OnInit {
     this.importing = true;
     try {
       const r = await this.backup.importJson(file);
-      this.toast.show(`Restored ${r.expenses} expenses, ${r.categories} categories and ${r.income} income entries.`);
+      this.toast.show(`Restored ${r.expenses} expenses, ${r.categories} categories, ${r.payments} payments and ${r.profits} profit entries.`);
     } catch (e) {
       this.toast.show((e as Error).message || 'Could not read that file.', undefined, 7000);
     } finally {

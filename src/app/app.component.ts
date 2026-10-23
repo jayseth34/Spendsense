@@ -10,9 +10,16 @@ export class AppComponent {
     { path: '/dashboard', label: 'Overview', icon: '⌂' },
     { path: '/categories', label: 'Categories', icon: '▦' },
     { path: '/transactions', label: 'Transactions', icon: '≡' },
-    { path: '/income', label: 'Income', icon: '₹' },
+    { path: '/payments', label: 'Payments', icon: '⇅' },
+    { path: '/profits', label: 'Profits', icon: '↗' },
     { path: '/reports', label: 'Reports', icon: '▤' },
   ];
+  /** Mobile bottom bar shows these; the rest go in the "More" sheet. */
+  mobileMain = ['/dashboard', '/payments', '/profits'];
+  moreOpen = false;
+
+  get moreItems() { return this.nav.filter(n => !this.mobileMain.includes(n.path)); }
+  item(path: string) { return this.nav.find(n => n.path === path)!; }
 
   constructor(public toast: ToastService) {}
 

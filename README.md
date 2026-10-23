@@ -10,12 +10,14 @@ There is no backend and no login: all data is stored in your browser's **Indexed
 
 ## Features
 
-- **Overview** — spent this month, today and this week, budget vs actual, income and savings, category breakdown (donut), daily spending chart, recent transactions
+- **Overview** — spent this month, today and this week, budget vs actual, money in and net (received − paid out − spent), pending payments, category breakdown (donut), daily spending chart, recent transactions
 - **Add / edit / delete expenses** — amount, category, date, optional description and payment method; undo on delete
 - **Category analysis** — month total, count, average and largest purchase, change vs last month, 6-month average, 12-month chart, payment methods, transactions, inline budget
 - **Custom categories** — name, icon, colour and monthly budget; categories with history are archived rather than deleted
 - **Transactions** — filter by date range, category, payment method and text; CSV export
-- **Income** — record income to see what's left and your savings rate
+- **Payments** — incoming and outgoing payments with the other party, Pending or Done; mark pending ones received/paid; "to receive / to pay" totals and pending balance per person
+- **Profits** — add profit (or loss) entries; the all-time total keeps adding up, with this month, this year, running total per entry, 12-month chart and by-source totals
+- **Quick category** — create a new category right from the Add expense form
 - **Reports** — yearly month-by-month chart, monthly summary and category totals; print to PDF; CSV export
 - **Your data** — JSON backup and restore, protected (persistent) storage request
 

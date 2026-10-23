@@ -1,0 +1,98 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Profits</h1>
+      <p class="muted">Add each profit; the total keeps adding up.</p>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi hero profit-hero" [class.neg]="vm.total < 0">
+      <span class="kpi-label">Total profit</span>
+      <span class="kpi-value">{{ vm.total | inr }}</span>
+      <span class="kpi-sub">{{ vm.rows.length }} entr{{ vm.rows.length === 1 ? 'y' : 'ies' }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">This month</span>
+      <span class="kpi-value sm" [class.pos-text]="vm.monthTotal > 0" [class.over-text]="vm.monthTotal < 0">{{ vm.monthTotal | inr }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">This year</span>
+      <span class="kpi-value sm" [class.pos-text]="vm.yearTotal > 0" [class.over-text]="vm.yearTotal < 0">{{ vm.yearTotal | inr }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Biggest entry</span>
+      <span class="kpi-value sm">{{ vm.best ? (vm.best.amount | inr) : '—' }}</span>
+      <span class="kpi-sub" *ngIf="vm.best">{{ vm.best.source || (vm.best.date | dayLabel) }}</span>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <div>
+      <form #formCard class="card form" (ngSubmit)="save()" novalidate>
+        <div class="card-head"><h2>{{ draft.id ? 'Edit entry' : 'Add profit' }}</h2></div>
+
+        <div class="dir-toggle">
+          <button type="button" [class.active-in]="draft.kind === 'profit'" (click)="draft.kind = 'profit'">＋ Profit</button>
+          <button type="button" [class.active-out]="draft.kind === 'loss'" (click)="draft.kind = 'loss'">− Loss</button>
+        </div>
+
+        <div class="row-2">
+          <label><span class="label">Amount (₹)</span>
+            <input type="number" inputmode="decimal" min="0" step="0.01" name="amt" [(ngModel)]="draft.amount" placeholder="0" /></label>
+          <label><span class="label">Date</span>
+            <input type="date" name="date" [(ngModel)]="draft.date" [max]="maxDate" /></label>
+        </div>
+        <div class="row-2">
+          <label><span class="label">Source <em>(optional)</em></span>
+            <input type="text" name="source" [(ngModel)]="draft.source" maxlength="60" list="sources" placeholder="e.g. Dawn Sogni order" /></label>
+          <label><span class="label">Note <em>(optional)</em></span>
+            <input type="text" name="note" [(ngModel)]="draft.note" maxlength="120" /></label>
+          <datalist id="sources"><option *ngFor="let s of vm.sourceNames" [value]="s"></option></datalist>
+        </div>
+
+        <p class="error" *ngIf="error" role="alert">{{ error }}</p>
+        <div class="actions">
+          <button class="btn danger ghost" type="button" *ngIf="editing" (click)="remove(editing)">Delete</button>
+          <span class="spacer"></span>
+          <button class="btn ghost" type="button" *ngIf="draft.id" (click)="cancel()">Cancel</button>
+          <button class="btn primary" type="submit">{{ draft.id ? 'Save changes' : (draft.kind === 'loss' ? 'Add loss' : 'Add profit') }}</button>
+        </div>
+      </form>
+
+      <section class="card" *ngIf="vm.rows.length">
+        <div class="card-head"><h2>Last 12 months</h2></div>
+        <app-chart type="bar" [labels]="vm.chart.labels" [datasets]="vm.chart.datasets" [height]="200"></app-chart>
+      </section>
+
+      <section class="card" *ngIf="vm.sources.length > 1">
+        <div class="card-head"><h2>By source</h2></div>
+        <ul class="cat-rows">
+          <li *ngFor="let s of vm.sources">
+            <div class="cat-row static">
+              <span class="cat-name">{{ s.source }}</span>
+              <span class="cat-share">{{ s.count }}×</span>
+              <span class="cat-total" [class.over-text]="s.total < 0">{{ s.total | inr }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Entries</h2><span class="muted small">Running total</span></div>
+      <p class="empty" *ngIf="!vm.rows.length">No profits yet. Add your first one.</p>
+      <ul class="tx-list">
+        <li class="tx" *ngFor="let p of vm.rows; trackBy: track">
+          <span class="tx-icon" [class.in]="p.amount >= 0" [class.out]="p.amount < 0">{{ p.amount >= 0 ? '＋' : '−' }}</span>
+          <button class="tx-main as-link" type="button" (click)="edit(p)">
+            <span class="tx-title">{{ p.source || (p.amount >= 0 ? 'Profit' : 'Loss') }}<ng-container *ngIf="p.note"> · {{ p.note }}</ng-container></span>
+            <span class="tx-meta">{{ p.date | dayLabel }} · total {{ vm.running.get(p.id!) | inr }}</span>
+          </button>
+          <span class="tx-amount" [class.pos]="p.amount >= 0" [class.over-text]="p.amount < 0">{{ p.amount >= 0 ? '+' : '−' }}{{ (p.amount < 0 ? -p.amount : p.amount) | inr: true }}</span>
+          <button class="icon-btn subtle" type="button" (click)="remove(p)" aria-label="Delete entry">✕</button>
+        </li>
+      </ul>
+    </section>
+  </div>
+</ng-container>
