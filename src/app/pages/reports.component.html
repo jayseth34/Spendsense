@@ -1,0 +1,87 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Reports</h1>
+      <p class="muted">Yearly summary and your data.</p>
+    </div>
+    <div class="head-actions no-print">
+      <div class="month-picker">
+        <button class="icon-btn" type="button" (click)="year$.next(vm.year - 1)" aria-label="Previous year">‹</button>
+        <span class="month-label"><span>{{ vm.year }}</span></span>
+        <button class="icon-btn" type="button" (click)="year$.next(vm.year + 1)" [disabled]="vm.year >= thisYear" aria-label="Next year">›</button>
+      </div>
+      <button class="btn ghost" type="button" (click)="print()">Print / PDF</button>
+      <button class="btn ghost" type="button" (click)="exportCsv(vm.expenses, vm.categories, vm.year)" [disabled]="!vm.expenses.length">CSV</button>
+    </div>
+  </header>
+
+  <section class="kpis three">
+    <div class="kpi"><span class="kpi-label">Spent in {{ vm.year }}</span><span class="kpi-value sm">{{ vm.total | inr }}</span></div>
+    <div class="kpi"><span class="kpi-label">Average month</span><span class="kpi-value sm">{{ vm.avgMonth | inr }}</span></div>
+    <div class="kpi"><span class="kpi-label">Income · Saved</span>
+      <span class="kpi-value sm" [class.over-text]="vm.incomeTotal && vm.incomeTotal - vm.total < 0">{{ vm.incomeTotal ? (vm.incomeTotal - vm.total | inr) : '—' }}</span>
+      <span class="kpi-sub" *ngIf="vm.incomeTotal">of {{ vm.incomeTotal | inr }}</span></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Month by month</h2></div>
+    <app-chart type="bar" [labels]="vm.chart.labels" [datasets]="vm.chart.datasets" [height]="240" [legend]="true"></app-chart>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head"><h2>Monthly summary</h2></div>
+      <p class="empty" *ngIf="!vm.rows.length">No data for {{ vm.year }}.</p>
+      <table class="table" *ngIf="vm.rows.length">
+        <thead><tr><th>Month</th><th class="num">Spent</th><th class="num">Income</th><th class="num">Saved</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let r of vm.rows">
+            <td>{{ r.month | monthLabel: 'short' }}</td>
+            <td class="num">{{ r.spent | inr }}</td>
+            <td class="num">{{ r.income ? (r.income | inr) : '—' }}</td>
+            <td class="num" [class.over-text]="r.income && r.saved < 0">{{ r.income ? (r.saved | inr) : '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>By category</h2></div>
+      <p class="empty" *ngIf="!vm.byCategory.length">No expenses in {{ vm.year }}.</p>
+      <table class="table" *ngIf="vm.byCategory.length">
+        <thead><tr><th>Category</th><th class="num">Share</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let t of vm.byCategory">
+            <td><a [routerLink]="['/categories', t.category.id]">{{ t.category.icon }} {{ t.category.name }}</a></td>
+            <td class="num">{{ t.share | pct }}</td>
+            <td class="num">{{ t.total | inr }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="card no-print">
+    <div class="card-head"><h2>Your data</h2></div>
+    <p class="muted">
+      Everything is stored only in this browser on this device — nothing is sent to a server.
+      Download a backup regularly; clearing site data or switching browsers will not bring it back.
+    </p>
+    <dl class="facts">
+      <div><dt>Last backup</dt><dd>{{ vm.lastBackupAt ? (vm.lastBackupAt.slice(0, 10) | dayLabel) : 'Never' }}</dd></div>
+      <div><dt>Protected storage</dt>
+        <dd>
+          {{ storage.persisted === null ? 'Not supported' : storage.persisted ? 'On' : 'Off' }}
+          <button *ngIf="storage.persisted === false" class="linklike" type="button" (click)="persist()">Turn on</button>
+        </dd></div>
+      <div><dt>Space used</dt><dd>{{ mb(storage.usage) }}</dd></div>
+    </dl>
+    <div class="actions">
+      <button class="btn primary" type="button" (click)="exportJson()">Download backup</button>
+      <label class="btn ghost" [class.disabled]="importing">
+        {{ importing ? 'Restoring…' : 'Restore from backup' }}
+        <input type="file" accept="application/json,.json" (change)="importFile($event)" hidden [disabled]="importing" />
+      </label>
+    </div>
+  </section>
+</ng-container>

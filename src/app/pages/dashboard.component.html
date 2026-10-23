@@ -1,0 +1,106 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Overview</h1>
+      <p class="muted">Your money, made visible.</p>
+    </div>
+    <app-month-picker></app-month-picker>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi hero">
+      <span class="kpi-label">Spent in {{ vm.month | monthLabel: 'short' }}</span>
+      <span class="kpi-value">{{ vm.total | inr }}</span>
+      <span class="kpi-sub">
+        {{ vm.count }} transaction{{ vm.count === 1 ? '' : 's' }}
+        <ng-container *ngIf="vm.change !== null">
+          · <span [class.up]="vm.change > 0" [class.down]="vm.change < 0">{{ vm.change > 0 ? '▲' : '▼' }} {{ (vm.change < 0 ? -vm.change : vm.change) | pct }}</span> vs last month
+        </ng-container>
+      </span>
+    </div>
+
+    <div class="kpi" *ngIf="vm.isCurrent">
+      <span class="kpi-label">Today</span>
+      <span class="kpi-value sm">{{ vm.todayTotal | inr }}</span>
+      <span class="kpi-sub">This week {{ vm.weekTotal | inr }}</span>
+    </div>
+    <div class="kpi" *ngIf="!vm.isCurrent">
+      <span class="kpi-label">Average per day</span>
+      <span class="kpi-value sm">{{ vm.avgPerDay | inr }}</span>
+      <span class="kpi-sub">Last month {{ vm.prevTotal | inr }}</span>
+    </div>
+
+    <div class="kpi">
+      <span class="kpi-label">Budget</span>
+      <ng-container *ngIf="vm.budget; else noBudget">
+        <span class="kpi-value sm">{{ vm.total | inr }} <small>/ {{ vm.budget | inr }}</small></span>
+        <div class="bar"><span [style.width.%]="min(vm.budgetUsed, 1) * 100" [class.over]="vm.budgetUsed > 1" [class.warn]="vm.budgetUsed > 0.85 && vm.budgetUsed <= 1"></span></div>
+        <span class="kpi-sub" *ngIf="vm.budget - vm.total >= 0">{{ vm.budget - vm.total | inr }} left</span>
+        <span class="kpi-sub over-text" *ngIf="vm.budget - vm.total < 0">{{ vm.total - vm.budget | inr }} over budget</span>
+      </ng-container>
+      <ng-template #noBudget>
+        <span class="kpi-value sm">—</span>
+        <a class="kpi-sub link" routerLink="/categories">Set category budgets</a>
+      </ng-template>
+    </div>
+
+    <a class="kpi kpi-link" routerLink="/income">
+      <span class="kpi-label">Income · Saved</span>
+      <ng-container *ngIf="vm.incomeTotal; else noIncome">
+        <span class="kpi-value sm" [class.over-text]="vm.saved < 0">{{ vm.saved | inr }}</span>
+        <span class="kpi-sub">of {{ vm.incomeTotal | inr }} income</span>
+      </ng-container>
+      <ng-template #noIncome>
+        <span class="kpi-value sm">—</span>
+        <span class="kpi-sub link">Add income</span>
+      </ng-template>
+    </a>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head">
+        <h2>By category</h2>
+        <a routerLink="/categories" class="link">All categories</a>
+      </div>
+      <div *ngIf="!vm.used.length" class="empty">
+        Nothing spent in {{ vm.month | monthLabel }} yet.
+        <a routerLink="/expense/new" class="link">Add your first expense</a>
+      </div>
+      <ng-container *ngIf="vm.used.length">
+        <div class="donut-wrap">
+          <app-chart type="doughnut" [labels]="vm.donut.labels" [datasets]="vm.donut.datasets" [height]="190"></app-chart>
+          <div class="donut-center"><span>{{ vm.total | inr }}</span><small>total</small></div>
+        </div>
+        <ul class="cat-rows">
+          <li *ngFor="let t of vm.used">
+            <a [routerLink]="['/categories', t.category.id]" class="cat-row">
+              <span class="dot" [style.background]="t.category.color"></span>
+              <span class="cat-name">{{ t.category.icon }} {{ t.category.name }}</span>
+              <span class="cat-share">{{ t.share | pct }}</span>
+              <span class="cat-total">{{ t.total | inr }}</span>
+            </a>
+            <div class="bar thin" *ngIf="t.budget" [title]="(t.budgetUsed | pct) + ' of ' + (t.budget | inr) + ' budget'">
+              <span [style.width.%]="min(t.budgetUsed, 1) * 100" [style.background]="t.category.color" [class.over]="t.budgetUsed > 1"></span>
+            </div>
+          </li>
+        </ul>
+      </ng-container>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Daily spending</h2>
+        <span class="muted small">avg {{ vm.avgPerDay | inr }}/day</span>
+      </div>
+      <app-chart type="bar" [labels]="vm.daily.labels" [datasets]="vm.daily.datasets" [height]="220"></app-chart>
+
+      <div class="card-head spaced">
+        <h2>Recent</h2>
+        <a routerLink="/transactions" class="link">All transactions</a>
+      </div>
+      <app-expense-list [expenses]="vm.expenses" [categories]="vm.categories" [limit]="6"
+        [emptyText]="'No transactions in ' + (vm.month | monthLabel) + '.'"></app-expense-list>
+    </section>
+  </div>
+</ng-container>

@@ -1,0 +1,56 @@
+<header class="page-head">
+  <div>
+    <h1>{{ editing ? 'Edit expense' : 'Add expense' }}</h1>
+    <p class="muted">Every expense belongs to a category.</p>
+  </div>
+</header>
+
+<form class="card form narrow" *ngIf="loaded" (ngSubmit)="save()" novalidate>
+  <label class="amount-field">
+    <span class="label">Amount</span>
+    <span class="amount-input">
+      <span class="currency">₹</span>
+      <input #amountInput type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"
+             name="amount" [(ngModel)]="amount" required aria-label="Amount in rupees" />
+    </span>
+  </label>
+
+  <fieldset>
+    <legend class="label">Category</legend>
+    <div class="chip-grid" *ngIf="categories$ | async as cats">
+      <button *ngFor="let c of cats" type="button" class="cat-chip" [class.active]="c.id === categoryId"
+              [style.--c]="c.color" (click)="categoryId = c.id!">
+        <span class="chip-icon">{{ c.icon }}</span>{{ c.name }}
+      </button>
+      <a class="cat-chip add" routerLink="/categories" [queryParams]="{ new: 1 }">＋ New</a>
+    </div>
+  </fieldset>
+
+  <div class="row-2">
+    <label>
+      <span class="label">Date</span>
+      <input type="date" name="date" [(ngModel)]="date" [max]="maxDate" required />
+    </label>
+    <label>
+      <span class="label">Description <em>(optional)</em></span>
+      <input type="text" name="description" [(ngModel)]="description" maxlength="120" placeholder="e.g. Jeans from Westside" />
+    </label>
+  </div>
+
+  <fieldset>
+    <legend class="label">Payment method</legend>
+    <div class="seg">
+      <button *ngFor="let m of methods" type="button" [class.active]="m === paymentMethod" (click)="paymentMethod = m">{{ m }}</button>
+    </div>
+  </fieldset>
+
+  <p class="error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <div class="actions">
+    <button type="button" class="btn danger ghost" *ngIf="editing" (click)="remove()">Delete</button>
+    <span class="spacer"></span>
+    <button type="button" class="btn ghost" (click)="cancel()">Cancel</button>
+    <button type="button" class="btn secondary" *ngIf="!editing" (click)="save(true)" [disabled]="saving">Save &amp; add another</button>
+    <button type="submit" class="btn primary" [disabled]="saving">{{ editing ? 'Save changes' : 'Save expense' }}</button>
+  </div>
+</form>

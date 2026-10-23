@@ -1,0 +1,95 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <div *ngIf="vm.missing" class="card empty">
+    This category doesn't exist. <a routerLink="/categories" class="link">Back to categories</a>
+  </div>
+
+  <ng-container *ngIf="!vm.missing">
+    <a routerLink="/categories" class="back">‹ Categories</a>
+    <header class="page-head">
+      <div class="title-with-badge" [style.--c]="vm.category.color">
+        <span class="cat-badge lg">{{ vm.category.icon }}</span>
+        <div>
+          <h1>{{ vm.category.name }} <span class="tag" *ngIf="vm.category.archived">Archived</span></h1>
+          <p class="muted">{{ vm.month | monthLabel }} analysis</p>
+        </div>
+      </div>
+      <div class="head-actions">
+        <app-month-picker></app-month-picker>
+        <a class="btn primary" routerLink="/expense/new" [queryParams]="{ category: vm.category.id }">＋ Add to {{ vm.category.name }}</a>
+      </div>
+    </header>
+
+    <section class="kpis">
+      <div class="kpi hero">
+        <span class="kpi-label">Spent this month</span>
+        <span class="kpi-value">{{ vm.total | inr }}</span>
+        <span class="kpi-sub">
+          {{ vm.count }} purchase{{ vm.count === 1 ? '' : 's' }}
+          <ng-container *ngIf="vm.change !== null">
+            · <span [class.up]="vm.change > 0" [class.down]="vm.change < 0">{{ vm.change > 0 ? '▲' : '▼' }} {{ (vm.change < 0 ? -vm.change : vm.change) | pct }}</span> vs {{ vm.prevTotal | inr }}
+          </ng-container>
+        </span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Average per purchase</span>
+        <span class="kpi-value sm">{{ vm.avg | inr }}</span>
+        <span class="kpi-sub" *ngIf="vm.largest">Largest {{ vm.largest.amount | inr }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">6-month average</span>
+        <span class="kpi-value sm">{{ vm.sixMonthAvg | inr }}</span>
+        <span class="kpi-sub">per month before this one</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Monthly budget</span>
+        <ng-container *ngIf="!editingBudget">
+          <ng-container *ngIf="vm.budget; else noBudget">
+            <span class="kpi-value sm">{{ vm.total | inr }} <small>/ {{ vm.budget | inr }}</small></span>
+            <div class="bar"><span [style.width.%]="min(vm.budgetUsed, 1) * 100" [style.background]="vm.category.color" [class.over]="vm.budgetUsed > 1"></span></div>
+            <span class="kpi-sub" [class.over-text]="vm.budgetUsed > 1">
+              {{ vm.budgetUsed > 1 ? ((vm.total - vm.budget) | inr) + ' over budget' : ((vm.budget - vm.total) | inr) + ' remaining' }}
+              · <button type="button" class="linklike" (click)="startBudget(vm.budget)">Change</button>
+            </span>
+          </ng-container>
+          <ng-template #noBudget>
+            <span class="kpi-value sm">—</span>
+            <button type="button" class="linklike kpi-sub" (click)="startBudget(0)">Set a budget</button>
+          </ng-template>
+        </ng-container>
+        <form *ngIf="editingBudget" class="inline-form" (ngSubmit)="saveBudget(vm.category.id!)">
+          <input type="number" min="0" step="100" name="b" [(ngModel)]="budgetInput" placeholder="₹ per month" aria-label="Monthly budget" />
+          <button class="btn primary sm" type="submit">Set</button>
+          <button class="btn ghost sm" type="button" (click)="editingBudget = false">✕</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head"><h2>Last 12 months</h2></div>
+        <app-chart type="bar" [labels]="vm.history.labels" [datasets]="vm.history.datasets" [height]="220"></app-chart>
+
+        <div class="card-head spaced" *ngIf="vm.methods.length"><h2>Payment methods</h2></div>
+        <ul class="cat-rows" *ngIf="vm.methods.length">
+          <li *ngFor="let m of vm.methods">
+            <div class="cat-row static">
+              <span class="cat-name">{{ m.key }}</span>
+              <span class="cat-share">{{ m.count }}×</span>
+              <span class="cat-total">{{ m.total | inr }}</span>
+            </div>
+            <div class="bar thin"><span [style.width.%]="(m.total / vm.total) * 100" [style.background]="vm.category.color"></span></div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Transactions</h2>
+          <span class="muted small">{{ vm.month | monthLabel }}</span>
+        </div>
+        <app-expense-list [expenses]="vm.expenses" [categories]="vm.categories" [showCategory]="false"
+          [emptyText]="'No ' + vm.category.name + ' expenses in ' + (vm.month | monthLabel) + '.'"></app-expense-list>
+      </section>
+    </div>
+  </ng-container>
+</ng-container>

@@ -1,0 +1,77 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Categories</h1>
+      <p class="muted">Monthly budgets total {{ vm.budgetTotal | inr }}</p>
+    </div>
+    <div class="head-actions">
+      <app-month-picker></app-month-picker>
+      <button class="btn primary" type="button" (click)="newCategory(vm.all)">＋ New category</button>
+    </div>
+  </header>
+
+  <section class="card form narrow" *ngIf="draft as d">
+    <div class="card-head"><h2>{{ d.id ? 'Edit category' : 'New category' }}</h2></div>
+    <div class="row-2">
+      <label>
+        <span class="label">Name</span>
+        <input type="text" [(ngModel)]="d.name" name="cname" maxlength="40" placeholder="e.g. Clothes" autofocus />
+      </label>
+      <label>
+        <span class="label">Monthly budget (₹) <em>(optional)</em></span>
+        <input type="number" inputmode="numeric" min="0" step="100" [(ngModel)]="d.monthlyBudget" name="cbudget" placeholder="No budget" />
+      </label>
+    </div>
+    <fieldset>
+      <legend class="label">Icon</legend>
+      <div class="icon-grid">
+        <button *ngFor="let i of icons" type="button" [class.active]="i === d.icon" (click)="d.icon = i" [attr.aria-label]="'Icon ' + i">{{ i }}</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend class="label">Colour</legend>
+      <div class="swatches">
+        <button *ngFor="let c of colors" type="button" [class.active]="c === d.color" [style.background]="c" (click)="d.color = c" [attr.aria-label]="'Colour ' + c"></button>
+      </div>
+    </fieldset>
+    <p class="error" *ngIf="error" role="alert">{{ error }}</p>
+    <div class="actions">
+      <button class="btn danger ghost" type="button" *ngIf="d.id" (click)="remove()">Delete</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" type="button" (click)="draft = null">Cancel</button>
+      <button class="btn primary" type="button" (click)="save(vm.all)">Save</button>
+    </div>
+  </section>
+
+  <section class="cat-grid">
+    <article class="cat-card" *ngFor="let t of vm.active" [style.--c]="t.category.color">
+      <a class="cat-card-link" [routerLink]="['/categories', t.category.id]">
+        <div class="cat-card-top">
+          <span class="cat-badge">{{ t.category.icon }}</span>
+          <span class="cat-card-name">{{ t.category.name }}</span>
+        </div>
+        <span class="cat-card-total">{{ t.total | inr }}</span>
+        <span class="muted small">{{ t.count }} transaction{{ t.count === 1 ? '' : 's' }} in {{ vm.month | monthLabel: 'short' }}</span>
+        <ng-container *ngIf="t.budget">
+          <div class="bar thin"><span [style.width.%]="min(t.budgetUsed, 1) * 100" [style.background]="t.category.color" [class.over]="t.budgetUsed > 1"></span></div>
+          <span class="small" [class.over-text]="t.budgetUsed > 1" [class.muted]="t.budgetUsed <= 1">
+            {{ t.budgetUsed > 1 ? ((t.total - t.budget) | inr) + ' over' : ((t.budget - t.total) | inr) + ' left of ' + (t.budget | inr) }}
+          </span>
+        </ng-container>
+      </a>
+      <button class="icon-btn subtle edit" type="button" (click)="edit(t.category)" [attr.aria-label]="'Edit ' + t.category.name">✎</button>
+    </article>
+  </section>
+
+  <section class="archived" *ngIf="vm.archived.length">
+    <button class="btn ghost" type="button" (click)="showArchived = !showArchived">
+      {{ showArchived ? 'Hide' : 'Show' }} archived ({{ vm.archived.length }})
+    </button>
+    <ul *ngIf="showArchived" class="plain-list">
+      <li *ngFor="let c of vm.archived">
+        <a [routerLink]="['/categories', c.id]">{{ c.icon }} {{ c.name }}</a>
+        <button class="btn ghost sm" type="button" (click)="restore(c)">Restore</button>
+      </li>
+    </ul>
+  </section>
+</ng-container>

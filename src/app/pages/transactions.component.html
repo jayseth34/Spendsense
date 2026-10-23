@@ -1,0 +1,45 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <header class="page-head">
+    <div>
+      <h1>Transactions</h1>
+      <p class="muted">{{ vm.expenses.length }} found · {{ vm.total | inr: true }}</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn ghost" type="button" (click)="exportCsv(vm.expenses, vm.categories)" [disabled]="!vm.expenses.length">Export CSV</button>
+      <a class="btn primary" routerLink="/expense/new">＋ Add expense</a>
+    </div>
+  </header>
+
+  <section class="card filters">
+    <div class="seg">
+      <button type="button" [class.active]="preset === 'month'" (click)="setPreset('month')">This month</button>
+      <button type="button" [class.active]="preset === 'last30'" (click)="setPreset('last30')">Last 30 days</button>
+      <button type="button" [class.active]="preset === 'year'" (click)="setPreset('year')">This year</button>
+      <button type="button" [class.active]="preset === 'all'" (click)="setPreset('all')">All time</button>
+    </div>
+    <div class="filter-row">
+      <label><span class="label">From</span>
+        <input type="date" [(ngModel)]="f.start" (ngModelChange)="preset = 'custom'; apply()" name="from" /></label>
+      <label><span class="label">To</span>
+        <input type="date" [(ngModel)]="f.end" (ngModelChange)="preset = 'custom'; apply()" name="to" /></label>
+      <label><span class="label">Category</span>
+        <select [(ngModel)]="f.categoryId" (ngModelChange)="apply()" name="cat">
+          <option [ngValue]="null">All categories</option>
+          <option *ngFor="let c of vm.categories" [ngValue]="c.id">{{ c.icon }} {{ c.name }}</option>
+        </select></label>
+      <label><span class="label">Payment</span>
+        <select [(ngModel)]="f.paymentMethod" (ngModelChange)="apply()" name="pm">
+          <option [ngValue]="null">All methods</option>
+          <option *ngFor="let m of methods" [ngValue]="m">{{ m }}</option>
+        </select></label>
+      <label class="grow"><span class="label">Search</span>
+        <input type="search" [(ngModel)]="f.search" (ngModelChange)="apply()" name="q" placeholder="Description" /></label>
+    </div>
+    <button class="linklike small" type="button" (click)="reset()">Reset filters</button>
+  </section>
+
+  <section class="card">
+    <app-expense-list [expenses]="vm.expenses" [categories]="vm.categories" [limit]="100"
+      emptyText="No transactions match these filters."></app-expense-list>
+  </section>
+</ng-container>

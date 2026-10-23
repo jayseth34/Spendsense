@@ -1,0 +1,36 @@
+<div class="shell">
+  <aside class="sidebar no-print">
+    <a routerLink="/dashboard" class="brand">
+      <span class="brand-mark">S</span>
+      <span>SpendSense</span>
+    </a>
+    <a routerLink="/expense/new" class="btn primary full add-btn">＋ Add expense</a>
+    <nav>
+      <a *ngFor="let n of nav" [routerLink]="n.path" routerLinkActive="active">
+        <span class="nav-icon" aria-hidden="true">{{ n.icon }}</span>{{ n.label }}
+      </a>
+    </nav>
+    <p class="sidebar-foot">Stored privately on this device.</p>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <nav class="bottom-nav no-print">
+    <a *ngFor="let n of nav.slice(0, 2)" [routerLink]="n.path" routerLinkActive="active">
+      <span aria-hidden="true">{{ n.icon }}</span>{{ n.label }}
+    </a>
+    <a routerLink="/expense/new" class="fab" aria-label="Add expense">＋</a>
+    <a *ngFor="let n of [nav[2], nav[4]]" [routerLink]="n.path" routerLinkActive="active">
+      <span aria-hidden="true">{{ n.icon }}</span>{{ n.label === 'Transactions' ? 'History' : n.label }}
+    </a>
+  </nav>
+
+  <div class="toasts" aria-live="polite">
+    <div class="toast" *ngFor="let t of toast.toasts$ | async">
+      <span>{{ t.text }}</span>
+      <button *ngIf="t.action as a" type="button" (click)="run(t.id, a.run)">{{ a.label }}</button>
+    </div>
+  </div>
+</div>
